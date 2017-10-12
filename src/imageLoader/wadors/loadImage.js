@@ -11,7 +11,7 @@ function loadImage (imageId, options) {
   const start = new Date().getTime();
   const uri = imageId.substring(7);
 
-  const promise = new Promise((reject, resolve) => {
+  const promise = new Promise((resolve, reject) => {
     // check to make sure we have metadata for this imageId
     const metaData = metaDataManager.get(imageId);
 

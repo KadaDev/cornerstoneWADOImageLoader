@@ -2661,41 +2661,39 @@ function loadImage(imageId, options) {
   var start = new Date().getTime();
   var uri = imageId.substring(7);
 
-  var deferred = _externalModules.$.Deferred();
+  var promise = new Promise(function (resolve, reject) {
+    // check to make sure we have metadata for this imageId
+    var metaData = _metaDataManager2.default.get(imageId);
 
-  // check to make sure we have metadata for this imageId
-  var metaData = _metaDataManager2.default.get(imageId);
+    if (metaData === undefined) {
+      var error = new Error('no metadata for imageId ' + imageId);
 
-  if (metaData === undefined) {
-    deferred.reject('no metadata for imageId ' + imageId);
+      return reject(error);
+    }
 
-    return deferred.promise();
-  }
+    // TODO: load bulk data items that we might need
+    var mediaType = 'multipart/related; type="application/octet-stream"'; // 'image/dicom+jp2';
 
-  // TODO: load bulk data items that we might need
-  var mediaType = 'multipart/related; type="application/octet-stream"'; // 'image/dicom+jp2';
+    // get the pixel data from the server
+    (0, _getPixelData2.default)(uri, imageId, mediaType).then(function (result) {
+      var transferSyntax = getTransferSyntaxForContentType(result.contentType);
+      var pixelData = result.imageFrame.pixelData;
+      var imagePromise = (0, _createImage2.default)(imageId, pixelData, transferSyntax, options);
 
-  // get the pixel data from the server
-  (0, _getPixelData2.default)(uri, imageId, mediaType).then(function (result) {
+      imagePromise.then(function (image) {
+        // add the loadTimeInMS property
+        var end = new Date().getTime();
 
-    var transferSyntax = getTransferSyntaxForContentType(result.contentType);
-    var pixelData = result.imageFrame.pixelData;
-    var imagePromise = (0, _createImage2.default)(imageId, pixelData, transferSyntax, options);
-
-    imagePromise.then(function (image) {
-      // add the loadTimeInMS property
-      var end = new Date().getTime();
-
-      image.loadTimeInMS = end - start;
-      deferred.resolve(image);
-    }, function (reason) {
-      deferred.reject(reason);
-    });
-  }, function (reason) {
-    deferred.reject(reason);
+        image.loadTimeInMS = end - start;
+        resolve(image);
+      }, reject);
+    }, reject);
   });
 
-  return deferred;
+  return {
+    promise: promise,
+    cancelFn: undefined
+  };
 }
 
 // register wadors scheme
@@ -3001,9 +2999,41 @@ function loadImageFromPromise(dataSetPromise, imageId) {
   var options = arguments[4];
 
   var start = new Date().getTime();
-  var deferred = _externalModules.$.Deferred();
 
-  dataSetPromise.then(function (dataSet /* , xhr*/) {
+  var promise = new Promise(function (resolve, reject) {
+    dataSetPromise.then(function (dataSet /* , xhr*/) {
+      var pixelData = getPixelData(dataSet, frame);
+      var transferSyntax = dataSet.string('x00020010');
+      var loadEnd = new Date().getTime();
+      var imagePromise = (0, _createImage2.default)(imageId, pixelData, transferSyntax, options);
+
+      imagePromise.then(function (image) {
+        image.data = dataSet;
+        image.sharedCacheKey = sharedCacheKey;
+        var end = new Date().getTime();
+
+        image.loadTimeInMS = loadEnd - start;
+        image.totalTimeInMS = end - start;
+        addDecache(image);
+        resolve(image);
+      }, reject);
+    }, reject);
+  });
+
+  return {
+    promise: promise,
+    cancelFn: undefined
+  };
+}
+
+function loadImageFromDataSet(dataSet, imageId) {
+  var frame = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+  var sharedCacheKey = arguments[3];
+  var options = arguments[4];
+
+  var start = new Date().getTime();
+
+  var promise = new Promise(function (resolve, reject) {
     var pixelData = getPixelData(dataSet, frame);
     var transferSyntax = dataSet.string('x00020010');
     var loadEnd = new Date().getTime();
@@ -3017,44 +3047,14 @@ function loadImageFromPromise(dataSetPromise, imageId) {
       image.loadTimeInMS = loadEnd - start;
       image.totalTimeInMS = end - start;
       addDecache(image);
-      deferred.resolve(image);
-    }, function (error) {
-      deferred.reject(error);
-    });
-  }, function (error) {
-    deferred.reject(error);
+      resolve(image);
+    }, reject);
   });
 
-  return deferred;
-}
-
-function loadImageFromDataSet(dataSet, imageId) {
-  var frame = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-  var sharedCacheKey = arguments[3];
-  var options = arguments[4];
-
-  var start = new Date().getTime();
-  var deferred = _externalModules.$.Deferred();
-
-  var pixelData = getPixelData(dataSet, frame);
-  var transferSyntax = dataSet.string('x00020010');
-  var loadEnd = new Date().getTime();
-  var imagePromise = (0, _createImage2.default)(imageId, pixelData, transferSyntax, options);
-
-  imagePromise.then(function (image) {
-    image.data = dataSet;
-    image.sharedCacheKey = sharedCacheKey;
-    var end = new Date().getTime();
-
-    image.loadTimeInMS = loadEnd - start;
-    image.totalTimeInMS = end - start;
-    addDecache(image);
-    deferred.resolve(image);
-  }, function (error) {
-    deferred.reject(error);
-  });
-
-  return deferred;
+  return {
+    promise: promise,
+    cancelFn: undefined
+  };
 }
 
 function getLoaderForScheme(scheme) {
