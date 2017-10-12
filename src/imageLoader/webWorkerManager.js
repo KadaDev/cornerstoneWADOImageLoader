@@ -1,4 +1,3 @@
-import { $ } from '../externalModules.js';
 import { getOptions } from './internal/options.js';
 
 // the taskId to assign to the next task added via addTask()
@@ -98,7 +97,7 @@ function handleMessageFromWorker (msg) {
   } else {
     const start = webWorkers[msg.data.workerIndex].task.start;
 
-    webWorkers[msg.data.workerIndex].task.deferred.resolve(msg.data.result);
+    webWorkers[msg.data.workerIndex].task.promise.resolve(msg.data.result);
     webWorkers[msg.data.workerIndex].task = undefined;
 
     statistics.numTasksExecuting--;
@@ -201,7 +200,7 @@ function addTask (taskType, data, priority = 0, transferList) {
     initialize();
   }
 
-  const deferred = $.Deferred();
+  const promise = new Promise();
 
   // find the right spot to insert this decode task (based on priority)
   let i;
@@ -221,7 +220,7 @@ function addTask (taskType, data, priority = 0, transferList) {
     status: 'ready',
     added: new Date().getTime(),
     data,
-    deferred,
+    promise,
     priority,
     transferList
   });
@@ -231,7 +230,7 @@ function addTask (taskType, data, priority = 0, transferList) {
 
   return {
     taskId,
-    promise: deferred.promise()
+    promise
   };
 }
 
