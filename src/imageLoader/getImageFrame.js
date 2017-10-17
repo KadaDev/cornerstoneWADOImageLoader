@@ -1,7 +1,7 @@
 import { cornerstone } from '../externalModules.js';
 
-function getImageFrame (imageId) {
-  const imagePixelModule = cornerstone.metaData.get('imagePixelModule', imageId);
+function getImageFrame (imageId, dataSet) {
+  const imagePixelModule = cornerstone.metaData.get('imagePixelModule', imageId, dataSet);
 
   return {
     samplesPerPixel: imagePixelModule.samplesPerPixel,

@@ -32,17 +32,17 @@ function setPixelDataType (imageFrame) {
   }
 }
 
-function createImage (imageId, pixelData, transferSyntax, options) {
+function createImage (imageId, pixelData, transferSyntax, options, dataSet) {
   const canvas = document.createElement('canvas');
-  const imageFrame = getImageFrame(imageId);
+  const imageFrame = getImageFrame(imageId, dataSet);
   const decodePromise = decodeImageFrame(imageFrame, transferSyntax, pixelData, canvas, options);
 
   return new Promise((resolve, reject) => {
     decodePromise.then(function (imageFrame) {
-      const imagePlaneModule = cornerstone.metaData.get('imagePlaneModule', imageId) || {};
-      const voiLutModule = cornerstone.metaData.get('voiLutModule', imageId) || {};
-      const modalityLutModule = cornerstone.metaData.get('modalityLutModule', imageId) || {};
-      const sopCommonModule = cornerstone.metaData.get('sopCommonModule', imageId) || {};
+      const imagePlaneModule = cornerstone.metaData.get('imagePlaneModule', imageId, dataSet) || {};
+      const voiLutModule = cornerstone.metaData.get('voiLutModule', imageId, dataSet) || {};
+      const modalityLutModule = cornerstone.metaData.get('modalityLutModule', imageId, dataSet) || {};
+      const sopCommonModule = cornerstone.metaData.get('sopCommonModule', imageId, dataSet) || {};
       const isColorImage = isColorImageFn(imageFrame.photometricInterpretation);
 
       // JPEGBaseline (8 bits) is already returning the pixel data in the right format (rgba)

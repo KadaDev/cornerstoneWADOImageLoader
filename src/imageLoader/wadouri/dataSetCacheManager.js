@@ -24,7 +24,6 @@ function get (uri) {
   return loadedDataSets[uri].dataSet;
 }
 
-
   // loads the dicom dataset from the wadouri sp
 function load (uri, loadRequest = xhrRequest, imageId) {
   // if already loaded return it right away

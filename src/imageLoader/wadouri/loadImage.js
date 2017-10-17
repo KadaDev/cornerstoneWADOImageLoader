@@ -35,7 +35,7 @@ function loadImageFromPromise (dataSetPromise, imageId, frame = 0, sharedCacheKe
     const pixelData = getPixelData(dataSet, frame);
     const transferSyntax = dataSet.string('x00020010');
     const loadEnd = new Date().getTime();
-    const imagePromise = createImage(imageId, pixelData, transferSyntax, options);
+    const imagePromise = createImage(imageId, pixelData, transferSyntax, options, dataSet);
 
     imagePromise.then(function (image) {
       image.data = dataSet;
@@ -63,7 +63,7 @@ function loadImageFromDataSet (dataSet, imageId, frame = 0, sharedCacheKey, opti
   const pixelData = getPixelData(dataSet, frame);
   const transferSyntax = dataSet.string('x00020010');
   const loadEnd = new Date().getTime();
-  const imagePromise = createImage(imageId, pixelData, transferSyntax, options);
+  const imagePromise = createImage(imageId, pixelData, transferSyntax, options, dataSet);
 
   imagePromise.then((image) => {
     image.data = dataSet;
