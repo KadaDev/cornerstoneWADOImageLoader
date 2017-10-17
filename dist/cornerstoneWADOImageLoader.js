@@ -1,4 +1,4 @@
-/*! cornerstone-wado-image-loader - 0.14.7 - 2017-10-13 | (c) 2016 Chris Hafey | https://github.com/chafey/cornerstoneWADOImageLoader */
+/*! cornerstone-wado-image-loader - 0.14.7 - 2017-10-17 | (c) 2016 Chris Hafey | https://github.com/chafey/cornerstoneWADOImageLoader */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory(require("cornerstone-core"), require("dicom-parser"), require("jquery"));
@@ -291,17 +291,17 @@ function setPixelDataType(imageFrame) {
   }
 }
 
-function createImage(imageId, pixelData, transferSyntax, options) {
+function createImage(imageId, pixelData, transferSyntax, options, dataSet) {
   var canvas = document.createElement('canvas');
-  var imageFrame = (0, _getImageFrame2.default)(imageId);
+  var imageFrame = (0, _getImageFrame2.default)(imageId, dataSet);
   var decodePromise = (0, _decodeImageFrame2.default)(imageFrame, transferSyntax, pixelData, canvas, options);
 
   return new Promise(function (resolve, reject) {
     decodePromise.then(function (imageFrame) {
-      var imagePlaneModule = _externalModules.cornerstone.metaData.get('imagePlaneModule', imageId) || {};
-      var voiLutModule = _externalModules.cornerstone.metaData.get('voiLutModule', imageId) || {};
-      var modalityLutModule = _externalModules.cornerstone.metaData.get('modalityLutModule', imageId) || {};
-      var sopCommonModule = _externalModules.cornerstone.metaData.get('sopCommonModule', imageId) || {};
+      var imagePlaneModule = _externalModules.cornerstone.metaData.get('imagePlaneModule', imageId, dataSet) || {};
+      var voiLutModule = _externalModules.cornerstone.metaData.get('voiLutModule', imageId, dataSet) || {};
+      var modalityLutModule = _externalModules.cornerstone.metaData.get('modalityLutModule', imageId, dataSet) || {};
+      var sopCommonModule = _externalModules.cornerstone.metaData.get('sopCommonModule', imageId, dataSet) || {};
       var isColorImage = (0, _isColorImage2.default)(imageFrame.photometricInterpretation);
 
       // JPEGBaseline (8 bits) is already returning the pixel data in the right format (rgba)
@@ -951,8 +951,8 @@ Object.defineProperty(exports, "__esModule", {
 
 var _externalModules = __webpack_require__(0);
 
-function getImageFrame(imageId) {
-  var imagePixelModule = _externalModules.cornerstone.metaData.get('imagePixelModule', imageId);
+function getImageFrame(imageId, dataSet) {
+  var imagePixelModule = _externalModules.cornerstone.metaData.get('imagePixelModule', imageId, dataSet);
 
   return {
     samplesPerPixel: imagePixelModule.samplesPerPixel,
@@ -3011,7 +3011,7 @@ function loadImageFromPromise(dataSetPromise, imageId) {
     var pixelData = getPixelData(dataSet, frame);
     var transferSyntax = dataSet.string('x00020010');
     var loadEnd = new Date().getTime();
-    var imagePromise = (0, _createImage2.default)(imageId, pixelData, transferSyntax, options);
+    var imagePromise = (0, _createImage2.default)(imageId, pixelData, transferSyntax, options, dataSet);
 
     imagePromise.then(function (image) {
       image.data = dataSet;
@@ -3043,7 +3043,7 @@ function loadImageFromDataSet(dataSet, imageId) {
   var pixelData = getPixelData(dataSet, frame);
   var transferSyntax = dataSet.string('x00020010');
   var loadEnd = new Date().getTime();
-  var imagePromise = (0, _createImage2.default)(imageId, pixelData, transferSyntax, options);
+  var imagePromise = (0, _createImage2.default)(imageId, pixelData, transferSyntax, options, dataSet);
 
   imagePromise.then(function (image) {
     image.data = dataSet;
@@ -3192,11 +3192,12 @@ var _getModalityLUTOutputPixelRepresentation2 = _interopRequireDefault(_getModal
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function metaDataProvider(type, imageId) {
+function metaDataProvider(type, imageId, dataSet) {
   var parsedImageId = (0, _parseImageId2.default)(imageId);
 
-  var dataSet = _dataSetCacheManager2.default.get(parsedImageId.url);
-
+  if (!dataSet) {
+    dataSet = _dataSetCacheManager2.default.get(parsedImageId.url);
+  }
   if (!dataSet) {
     return;
   }
